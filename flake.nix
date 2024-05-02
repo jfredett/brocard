@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     fenix.url = "github:nix-community/fenix";
     devenv.url = "github:cachix/devenv";
   };
@@ -19,7 +19,7 @@
               inherit inputs pkgs;
               modules = [{
                 languages.rust.enable = true;
-                languages.rust.version = "latest";
+                languages.rust.channel = "nightly";
               }];
             };
           });
