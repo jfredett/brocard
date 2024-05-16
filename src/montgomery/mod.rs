@@ -145,14 +145,40 @@ mod tests {
 
     mod props {
         use super::*;
+        use quickcheck::{Arbitrary, Gen};
+
+        #[derive(Clone, Copy, Debug)]
+        struct TestCase {
+            a: u128,
+            b: u128,
+            n: u128,
+            r_exp: usize
+        }
+
+        impl Arbitrary for TestCase {
+            fn arbitrary<G: Gen>(g: &mut G) -> Self {
+                // r_exp is in [1,127] to avoid overflows
+                let r_exp = 1 + usize::arbitrary(g) % 126;
+                let r = 1 << r_exp;
+
+                // We'll just hunt till we find a coprime `n`, should be fast, any odd number will
+                // do. We also need `n < r`, so we can just examine `n mod r` to ensure this.
+                let mut n = u128::arbitrary(g) % r;
+                while gcd(n, r) != 1 {
+                    n = u128::arbitrary(g) % r;
+                }
+
+                // Constrain a and b to [0,n-1] for convenience
+                let a = u128::arbitrary(g) % n;
+                let b = u128::arbitrary(g) % n;
+
+                TestCase { a, b, n, r_exp }
+            }
+        }
 
         #[quickcheck]
-        fn montgomery_add_is_naive_add(a: u128, b: u128, n: u128, r_exp: usize) -> bool {
-            if r_exp > 128 { return true; }
-            if r_exp <= 1 { return true; }
-            if n <= 1 { return true; }
-            if n > (1 << r_exp) { return true; }
-            if gcd(1 << r_exp, n) != 1 { return true; }
+        fn montgomery_add_is_naive_add(tc: TestCase) -> bool {
+            let TestCase {a, b, n, r_exp} = tc;
 
             let naive = a.wrapping_add(b) % n;
 
@@ -165,12 +191,8 @@ mod tests {
         }
 
         #[quickcheck]
-        fn montgomery_mul_is_naive_mul(a: u128, b: u128, n: u128, r_exp: usize) -> bool {
-            if r_exp > 128 { return true; }
-            if r_exp <= 1 { return true; }
-            if n <= 1 { return true; }
-            if n > (1 << r_exp) { return true; }
-            if gcd(1 << r_exp, n) != 1 { return true; }
+        fn montgomery_mul_is_naive_mul(tc: TestCase) -> bool {
+            let TestCase {a, b, n, r_exp} = tc;
 
             let naive = mod_mult(a, b, n);
 
@@ -183,13 +205,8 @@ mod tests {
         }
 
         #[quickcheck]
-        fn montgomery_sub_is_naive_sub(a: u128, b: u128, n: u128, r_exp: usize) -> bool {
-            if r_exp > 128 { return true; }
-            if r_exp <= 1 { return true; }
-            if n <= 1 { return true; }
-            if n > (1 << r_exp) { return true; }
-
-            if gcd(1 << r_exp, n) != 1 { return true; }
+        fn montgomery_sub_is_naive_sub(tc: TestCase) -> bool {
+            let TestCase {a, b, n, r_exp} = tc;
 
             let naive = (a + (n - (b % n))) % n;
 
