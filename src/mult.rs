@@ -1,27 +1,30 @@
-fn monty_mult(a : i128, b : i128, m : i128) -> i128 {
-    let r_exp = 8;
-    let r = 1 << r_exp;
-    // the modular inverse of m mod r
-    let m_inv =  mod_inverse(m, r);
-    
-    // montgomery form for a and b
-    // a' = a * r mod m
-    let a_prime = modular_mult(a, r, m);
-    let b_prime = modular_mult(b, r, m);
+use std::fmt;
+use std::fmt::{Formatter,Debug};
 
-    // Multiply in Montgomery Form
-    let mut t = a_prime * b_prime;
-    let little_m = modular_mult(t, m_inv, r);
-    t = (t + little_m * m) >> r_exp;
-
-    if t >= m {
-        return t - m;
+fn gcd(a: u128, b: u128) -> u128 {
+    if a > b { return gcd(b, a); }
+    if a == 0 {
+        b
     } else {
-        return t;
-    };
+        gcd(b % a, a)
+    }
 }
 
-fn modular_exponent(mut n:i128 ,mut x:i128 , p:i128) -> i128 {
+fn mod_mult(a: u128, b: u128, m: u128) -> u128 {
+    let mut ans = 0;
+    let mut a = a % m;
+    let mut b = b % m;
+    while b > 0 {
+        if b & 1 == 1 {
+            ans = (ans + a) % m;
+        }
+        a = (a << 1) % m;
+        b >>= 1;
+    }
+    ans
+}
+
+fn modular_exponent(mut n:u128 ,mut x:u128 , p:u128) -> u128 {
     let mut ans = 1;
     if x <= 0 { return 1; }
     loop {
@@ -30,47 +33,127 @@ fn modular_exponent(mut n:i128 ,mut x:i128 , p:i128) -> i128 {
         if x & 1 == 0 { 
             n = ( n * n ) % p;
             x >>= 1;
-            continue; 
         } else { 
             ans = (ans*n) % p;
             x -= 1; 
         }
     }
 }
- 
-fn modular_mult(mut n:i128 ,mut x:i128 , p:i128) -> i128 {
-    let mut ans = 0;
-    if x <= 0 { return 1; }
-    loop {
-        if x == 1 { return (ans + n) % p; }
 
-        if x & 1 == 0 { 
-            n = ( n + n ) % p;
-            x >>= 1;
-            continue; 
-        } else { 
-            ans = (ans + n) % p;
-            x -= 1; 
+
+fn mod_inverse(n: u128, r: u128) -> Option<u128> {
+    let mut t = 0u128;
+    let mut new_t = 1u128;
+    let mut r = r;
+    let mut new_r = n;
+
+    while new_r != 0 {
+        let quotient = r / new_r;
+        // wrapping_sub works by wrapping around on overflow, so we don't need to check for
+        // negative values
+        t = t.wrapping_sub(quotient.wrapping_mul(new_t));
+        std::mem::swap(&mut t, &mut new_t);
+        r = r.wrapping_sub(quotient.wrapping_mul(new_r));
+        std::mem::swap(&mut r, &mut new_r);
+    }
+
+    if r > 1 { return None; }
+
+    Some(t)
+}
+
+#[derive(Clone)]
+struct MontgomeryForm {
+    exp: isize,
+    r: u128, 
+    r_squared: u128,
+    r_inv: u128,
+    n: u128, 
+    n_prime: u128
+}
+
+#[derive(Clone)]
+struct MontgomeryElt {
+    space: Box<MontgomeryForm>,
+    val: u128
+}
+
+impl Debug for MontgomeryElt {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "MontgomeryElt({})", self.val)
+    }
+}
+
+
+impl MontgomeryForm {
+    fn new(n: u128, exp: isize) -> Self {
+        let r = 1 << exp;
+
+        assert!(gcd(r, n) == 1);
+
+        let r_inv = mod_inverse(r, n).unwrap() % n;
+
+        // rr^-1 - nn' = 1 mod r =>
+        // 0 - nn' = 1 mod r =>
+        // nn' = -1 mod r =>
+        // n(-n^-1) = 1 mod r =>
+        // n' = -n^-1 mod r =>
+        // n' = (r - n)^-1 mod r
+        let n_prime = mod_inverse(r - n, r).unwrap() % r;
+
+
+
+
+
+        MontgomeryForm {
+            exp,
+            r,
+            r_squared: mod_mult(r, r, n),
+            r_inv,
+            n,
+            n_prime
+        }
+    }
+
+    fn enter(&self, val: u128) -> MontgomeryElt {
+        let new_val = self.redc(mod_mult(val, self.r_squared, self.n));
+
+        MontgomeryElt::new(
+            Box::new(self.clone()),
+            new_val
+        )
+    }
+
+
+    fn redc(&self, val: u128) -> u128 {
+        let little_m = mod_mult(val, self.n_prime, self.r);
+        let new_t = (val + (little_m * self.n)) >> self.exp;
+
+        if new_t >= self.n {
+            new_t - self.n
+        } else {
+            new_t
         }
     }
 }
 
-fn extended_gcd(a: i128, b: i128) -> (i128, i128, i128) {
-    if a == 0 {
-        (b, 0, 1)
-    } else {
-        let (g, x, y) = extended_gcd(b % a, a);
-        (g, y - (b / a) * x, x)
+impl MontgomeryElt {
+    fn new(space: Box<MontgomeryForm>, val: u128) -> Self {
+        MontgomeryElt {
+            space,
+            val
+        }
     }
-}
 
-fn mod_inverse(m: i128, r: i128) -> i128 {
-    let (g, x, _) = extended_gcd(m, r);
-    if g != 1 {
-        panic!("Inverse does not exist!");
-    } else {
-        // Normalize the result to be positive
-        (x % r + r) % r
+    fn exit(&self) -> u128 {
+        self.space.redc(self.val) % self.space.n
+    }
+
+    fn mult(&self, other: &MontgomeryElt) -> MontgomeryElt {
+        MontgomeryElt {
+            space: self.space.clone(),
+            val: self.space.redc(self.val.wrapping_mul(other.val))
+        }
     }
 }
 
@@ -79,53 +162,38 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_modular_mult() {
-        assert_eq!(modular_mult(2, 4, 5), 3);
-    } 
-
-    #[test]
-    fn test_exponent() {
-        assert_eq!(modular_exponent(2, 4, 5), 1);
+    fn wikipedia_example() {
+        let space = MontgomeryForm::new(17, 8);
+        let a = space.enter(7);
+        let b = space.enter(15);
+        let c = a.mult(&b);
+        assert_eq!(c.exit(), (7 * 15) % 17);
     }
 
     #[quickcheck]
-    fn modular_mult_is_naive_mult(n : i128, x : i128, p : i128) -> bool {
-        if x <= 0 { return true; }
-        if p <= 1 { return true; }
-        modular_mult(n, x, p) == (n * x) % p
-    }
+    fn multiplication(a_in: u128, b_in: u128, n: u128) -> bool {
+        if n <= 1 { return true; }
+        if gcd(n, 1 << 8) != 1 { return true; }
 
-    #[quickcheck]
-    fn modular_exp_is_naive_exp(n : i128, x : i128, p : i128) -> bool {
-        // These constraints are necessary so the naive side doesn't overflow.
-        // the exponent must also be > 0
-        if x <= 0 { return true; }
-        if x >= 16 { return true; }
-
-        if p <= 1 { return true; }
-
-        modular_exponent(n, x, p) == (n.pow(x as u32)) % p
+        let space = MontgomeryForm::new(n, 8);
+        let a = space.enter(a_in);
+        let b = space.enter(b_in);
+        let c = a.mult(&b);
+        c.exit() == mod_mult(a_in, b_in, n)
     }
 
     #[test]
-    fn modular_inverse_works() {
-        assert_eq!(mod_inverse(3, 5), 2);
-    }
+    fn edge() {
+        let a_in = 1; let b_in = 1; let n = 9; let r_exp = 8;
 
-    #[quickcheck]
-    fn monty_mult_is_modular_mult(a : i128, b : i128, m : i128) -> bool {
-        if m <= 1 { return true; }
-        if m % 2 == 0 { return true; }
-        if a <= 1 { return true; }
-        if b <= 1 { return true; }
-        if a >= m { return true; }
-        if b >= m { return true; }
-        
+        let space = MontgomeryForm::new(n, r_exp);
+        let a = space.enter(a_in);
+        let b = space.enter(b_in);
+        let c = a.mult(&b);
 
+        dbg!(&a,&b,&c);
+        dbg!(mod_mult(a_in, b_in, n));
 
-        dbg!(mod_inverse(a,m));
-        dbg!(mod_inverse(b,m));
-
-        monty_mult(a, b, m) == modular_mult(a, b, m)
+        assert_eq!(c.exit(), mod_mult(a_in, b_in, n));
     }
 }
