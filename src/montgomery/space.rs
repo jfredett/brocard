@@ -1,4 +1,5 @@
-use crate::montgomery::{mod_inverse, mod_mult, gcd, Elt};
+use crate::montgomery::{mod_inverse, mod_mult, mod_exp, gcd, Elt};
+use std::ops::Mul;
 
 /// A Montgomery Space is a modulus `n` and a Montgomery constant `r` such that `r * r_inv - n *
 /// n_inv = 1`. The Montgomery constant `r` is chosen such that `r > n` and `r` is a power of 2.
@@ -13,9 +14,45 @@ pub struct Space {
     pub r: u128,
     pub n: u128,
     pub r_inv: u128, 
-    pub r_squared: u128,
-    pub n_inv: u128,
-    pub n_prime: u128
+    pub r_squared: u128, pub n_inv: u128,
+    pub n_prime: u128,
+    pub r_n_legendre: LegendreSymbol
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum LegendreSymbol {
+    Divisor = 0,
+    Residue = 1,
+    Nonresidue = 2,
+}
+
+impl LegendreSymbol {
+    pub fn naive_legendre(a: u128, p: u128) -> LegendreSymbol {
+        let ret = mod_exp(a, (p - 1) / 2, p);
+        // the following is a switch statement on the output of the mod_exp above
+        if ret == 0 {
+            LegendreSymbol::Divisor
+        } else if ret == 1 {
+            LegendreSymbol::Residue
+        } else {
+            LegendreSymbol::Nonresidue
+        }
+    }
+}
+
+impl Mul for LegendreSymbol {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (LegendreSymbol::Divisor    , _                         ) => LegendreSymbol::Divisor,
+            (_                          , LegendreSymbol::Divisor   ) => LegendreSymbol::Divisor,
+            (LegendreSymbol::Residue    , LegendreSymbol::Residue   ) => LegendreSymbol::Residue,
+            (LegendreSymbol::Residue    , LegendreSymbol::Nonresidue) => LegendreSymbol::Nonresidue,
+            (LegendreSymbol::Nonresidue , LegendreSymbol::Residue   ) => LegendreSymbol::Nonresidue,
+            (LegendreSymbol::Nonresidue , LegendreSymbol::Nonresidue) => LegendreSymbol::Residue,
+        }
+    }
 }
 
 impl Space {
@@ -30,6 +67,11 @@ impl Space {
         }
     }
 
+    /// Calculates aRn via aRr * rRn, where rRn is precomputed and cached at creation time.
+    pub fn legendre(&self, a: Elt) -> LegendreSymbol {
+        LegendreSymbol::naive_legendre(a.val, self.r) * self.r_n_legendre
+    }
+
     /// REDC is the core of the Montgomery multiplication algorithm. It takes a number `a` and
     /// quickly reduces it modulo `n` by multiplying it by `n_prime` modulo `r` and then shifting
     /// right by `r_exp`. This is equivalent to multiplying by `r` modulo `n` and then reducing
@@ -38,7 +80,11 @@ impl Space {
     /// This allows a _much_ faster modulo operation, since shifting is much cheaper than division.
     /// This scales up to multiprecision numbers, but we limit to 128b numbers here.
     pub fn redc(&self, a: u128) -> u128 {
-        let little_m = mod_mult(a, self.n_prime, self.r);
+        // k mod r, since r is a power of two, is just the `r_exp` least significant bits of k.
+        // that can be calculated by `k & (r - 1)`. This is equivalent to `k % r` when `r` is a
+        // power of two.
+        let mod_r = self.r - 1;
+        let little_m = ((a & mod_r) * self.n_prime) & mod_r; 
         let new_t = (a + (little_m * self.n)) >> self.r_exp;
 
         if new_t >= self.n {
@@ -51,13 +97,12 @@ impl Space {
     /// n is the modulus, r_exp is the exponent of the Montgomery constant r = 2^r_exp.
     /// This function calculates all other relevant constants, in particular it calculates:
     ///
-    /// ```
     /// r         = 2^r_exp              // The Montgomery constant
     /// r_inv     = r^-1 mod n           // The modular inverse of r mod n
     /// r_squared = r^2 mod n            // Used for 'entering' the space
     /// n_inv     = n^-1 mod r           // The modular inverse of n mod r
     /// n_prime   = (r - n)^-1 mod r     // The modular inverse of -n mod r, used in `redc`
-    /// ```
+    ///
     ///
     pub fn new(n: u128, r_exp: usize) -> Space {
         let r = 1 << r_exp;
@@ -80,11 +125,18 @@ impl Space {
         //
         let n_prime = mod_inverse(r - n, r).unwrap() % r;
 
+        // This is used in the speedup of the legendre symbol calculation in #legendre.
+        // We have to use the naive calculation here, but we only do this once and cache it.
+        // Then the legendre symbol can be calculated as (aRr * rRn). This is a speedup because
+        // we're doing the expensive operation mod R, and R is really easy to divide by.
+        let r_n_legendre = LegendreSymbol::naive_legendre(r, n);
+
         Space {
             r_exp,
             r,
             r_squared: mod_mult(r, r, n),
             r_inv,
+            r_n_legendre,
             n,
             n_inv,
             n_prime

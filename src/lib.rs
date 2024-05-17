@@ -6,6 +6,3 @@ pub mod montgomery;
 #[cfg(test)]
 #[macro_use] extern crate quickcheck_macros;
 
-fn main() {
-    println!("Hello, world!");
-}

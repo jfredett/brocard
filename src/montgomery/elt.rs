@@ -8,8 +8,6 @@ pub struct Elt<'a> {
 
 impl Elt<'_> {
     pub fn exit(&self) -> u128 {
-        dbg!(self.val);
-        dbg!(self.space.redc(self.val));
         self.space.redc(self.val) % self.space.n
     }
 }

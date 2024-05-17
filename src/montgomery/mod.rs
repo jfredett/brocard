@@ -2,8 +2,14 @@ pub mod space;
 pub mod elt;
 
 
-pub use space::Space;
+pub use space::{LegendreSymbol, Space};
 pub use elt::Elt;
+
+#[cfg(test)]
+pub mod test_case;
+
+#[cfg(test)]
+pub use test_case::TestCase;
 
 // TODO: This almost certainly exists somewhere already
 pub fn gcd(a: u128, b: u128) -> u128 {
@@ -38,7 +44,6 @@ pub fn mod_inverse(n: u128, r: u128) -> Option<u128> {
     Some(t)
 }
 
-
 pub fn mod_mult(a: u128, b: u128, n: u128) -> u128 {
     let mut result = 0;
     let mut a = a % n;
@@ -65,11 +70,12 @@ pub fn mod_exp(a: u128, k: u128, n: u128) -> u128 {
 
     while k > 0 {
         if k & 1 == 1 {
-            result = (result * a) % n;
+            result = mod_mult(result, a, n);
         }
-        a = (a * a) % n;
+        a = mod_mult(a, a, n);
         k >>= 1;
     }
+
     result
 }
 
@@ -100,8 +106,6 @@ pub fn extended_gcd(a: u128, b: u128) -> (u128, u128) {
 }
 
 
-#[cfg(test)]
-mod test_case;
 
 #[cfg(test)]
 mod tests {
@@ -111,14 +115,89 @@ mod tests {
     mod unit {
         use super::*;
 
-        #[test]
-        fn wikipedia_example() {
-            let space = Space::new(17, 8);
-            let a = space.enter(7);
-            let b = space.enter(15);
+        mod montgomery {
+            use super::*;
 
-            let c = a * b;
-            assert_eq!(c.exit(), 3);
+            #[test]
+            fn wikipedia_example() {
+                let space = Space::new(17, 8);
+                let a = space.enter(7);
+                let b = space.enter(15);
+
+                let c = a * b;
+                assert_eq!(c.exit(), 3);
+            }
+
+        }
+
+        mod legendre {
+            use super::*;
+
+            mod montgomery {
+                use super::*;
+
+                #[test]
+                fn legendre_showing_divisor() {
+                    let space = Space::new(21, 8);
+                    let a = space.enter(7);
+
+                    assert_eq!(
+                        space.legendre(a),
+                        LegendreSymbol::Divisor
+                    );
+                }
+
+                #[test]
+                fn legendre_showing_non_residue() {
+                    let space = Space::new(21, 8);
+                    let a = space.enter(11);
+
+                    assert_eq!(
+                        space.legendre(a),
+                        LegendreSymbol::Nonresidue
+                    );
+                }
+
+                #[test]
+                fn legendre_showing_quadratic_residue() {
+                    let space = Space::new(21, 8);
+                    let a = space.enter(5);
+
+                    assert_eq!(
+                        space.legendre(a),
+                        LegendreSymbol::Residue
+                    );
+                }
+            }
+
+            mod naive {
+                use super::*;
+
+                #[test]
+                fn legendre_showing_divisor() {
+                    assert_eq!(
+                        LegendreSymbol::naive_legendre(21, 7),
+                        LegendreSymbol::Divisor
+                    );
+                }
+
+                #[test]
+                fn legendre_showing_non_residue() {
+                    assert_eq!(
+                        LegendreSymbol::naive_legendre(21, 11),
+                        LegendreSymbol::Nonresidue
+                    );
+                }
+
+                #[test]
+                fn legendre_showing_quadratic_residue() {
+                    assert_eq!(
+                        LegendreSymbol::naive_legendre(21, 5),
+                        LegendreSymbol::Residue
+                    );
+                }
+            }
+
         }
     }
 

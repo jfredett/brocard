@@ -3,7 +3,8 @@ name = "brocard"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+bench = false
 
 [dev-dependencies]
 approx = "*"
@@ -12,3 +13,17 @@ quickcheck_macros = "*"
 rand = "*"
 criterion = "*"
 criterion-macro = "*"
+
+[[bench]]
+name = "benchmarks"
+harness = true
+
+[profile.bench]
+opt-level = 3
+debug = false
+rpath = false
+lto = false
+debug-assertions = false
+codegen-units = 1
+incremental = false
+overflow-checks = false
