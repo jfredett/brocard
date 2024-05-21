@@ -6,6 +6,13 @@ edition = "2021"
 [lib]
 bench = false
 
+[[bin]]
+name = "brocard"
+path = "src/main.rs"
+
+[dependencies]
+rayon = "*"
+
 [dev-dependencies]
 approx = "*"
 quickcheck = "*"
@@ -17,6 +24,16 @@ criterion-macro = "*"
 [[bench]]
 name = "benchmarks"
 harness = true
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = false
+debug-assertions = false
+codegen-units = 1
+incremental = false
+overflow-checks = false
 
 [profile.bench]
 opt-level = 3

@@ -10,9 +10,11 @@ pub use criterion_macro::criterion;
 pub use quickcheck::{Arbitrary, Gen};
 
 pub use brocard::montgomery::{Elt, Space, LegendreSymbol};
+pub use brocard::prime::is_prime;
 
 mod montgomery_bench;
 mod legendre_bench;
+mod prime_bench;
 
 
 fn config() -> Criterion {

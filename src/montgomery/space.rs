@@ -9,6 +9,7 @@ use std::ops::Mul;
 /// together, then multiplying the result by `r_inv` modulo `n` to get `ab mod n`. This can be done
 /// efficiently by the `redc` function. When `r` is chosen to be a power of 2, the `redc` function
 /// can be implemented as a simple bit shift.
+#[derive(Debug, Clone)]
 pub struct Space {
     pub r_exp: usize,
     pub r: u128,
@@ -67,10 +68,30 @@ impl Space {
         }
     }
 
+    pub fn factorial(&self, n: usize) -> Elt {
+        let mut result = self.enter(1);
+        for i in 1..=n {
+            result = result * self.enter(i as u128);
+        }
+        return result;
+    }
+
     /// Calculates aRn via aRr * rRn, where rRn is precomputed and cached at creation time.
     pub fn legendre(&self, a: Elt) -> LegendreSymbol {
-        LegendreSymbol::naive_legendre(a.val, self.r) * self.r_n_legendre
+        let exp = (self.n - 1) >> 1;
+        let result = a.exp(exp).exit();
+
+        let a_r_sym = if result == self.n - 1 {
+            LegendreSymbol::Nonresidue
+        } else if result == 1 {
+            LegendreSymbol::Residue
+        } else {
+            LegendreSymbol::Divisor
+        };
+
+        a_r_sym * self.r_n_legendre
     }
+
 
     /// REDC is the core of the Montgomery multiplication algorithm. It takes a number `a` and
     /// quickly reduces it modulo `n` by multiplying it by `n_prime` modulo `r` and then shifting
@@ -121,7 +142,7 @@ impl Space {
         // => nn' = -1        mod r
         // => n(-n^-1) = 1    mod r
         // => n' = -n^-1      mod r
-        // => n' = (r - n)^-1 mod r
+        // => n' = (r - n)^-1 mod r  // Since n < r, we know this will never underflow in the subtraction.
         //
         let n_prime = mod_inverse(r - n, r).unwrap() % r;
 
@@ -142,4 +163,6 @@ impl Space {
             n_prime
         }
     }
+
+
 }

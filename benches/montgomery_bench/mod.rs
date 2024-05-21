@@ -1,7 +1,6 @@
 use super::*;
-use criterion::Criterion;
+use criterion::{BenchmarkId, Criterion};
 use rand::rngs::StdRng;
-use rand::SeedableRng;
 
 use brocard::montgomery::{gcd, mod_mult};
 use quickcheck::{Arbitrary, StdGen, Gen};
@@ -52,57 +51,25 @@ fn test_case_creation(c: &mut Criterion) {
 fn montgomery_multiplication_fixed_r_exp(c: &mut Criterion) {
     let mut rng = StdRng::seed_from_u64(get_seed());
     let mut gen = StdGen::new(&mut rng, 1000);
-    c.bench_function("Montgomery Multiplication with Fixed Exponent (8)", |b| b.iter(|| {
-        let TestCase { a, b, n, r_exp: _ } = TestCase::arbitrary(&mut gen);
 
-        let space = Space::new(n, 8);
+    let mut group = c.benchmark_group("Montgomery Multiplication with Fixed Exponent");
 
-        black_box(
-            (space.enter(a) * space.enter(b)).exit()
-        );
-    }));
-}
-#[criterion(config())]
-fn montgomery_multiplication_fixed_r_exp(c: &mut Criterion) {
-    let mut rng = StdRng::seed_from_u64(get_seed());
-    let mut gen = StdGen::new(&mut rng, 1000);
-    c.bench_function("Montgomery Multiplication with Fixed Exponent (16)", |b| b.iter(|| {
-        let TestCase { a, b, n, r_exp: _ } = TestCase::arbitrary(&mut gen);
+    for r_exp in [8, 16, 32, 64].iter() {
+        group.bench_with_input(BenchmarkId::from_parameter(r_exp), r_exp, |bench, r_exp| {
+            bench.iter(|| {
+                let TestCase { a, b, n, r_exp: _ } = TestCase::arbitrary(&mut gen);
+                let r = 1 << r_exp;
 
-        let space = Space::new(n, 16);
+                let space = Space::new(n, r);
 
-        black_box(
-            (space.enter(a) * space.enter(b)).exit()
-        );
-    }));
-}
-#[criterion(config())]
-fn montgomery_multiplication_fixed_r_exp(c: &mut Criterion) {
-    let mut rng = StdRng::seed_from_u64(get_seed());
-    let mut gen = StdGen::new(&mut rng, 1000);
-    c.bench_function("Montgomery Multiplication with Fixed Exponent (32)", |b| b.iter(|| {
-        let TestCase { a, b, n, r_exp: _ } = TestCase::arbitrary(&mut gen);
+                black_box(
+                    (space.enter(a) * space.enter(b)).exit()
+                );
+            });
+        });
+    }
+    group.finish();
 
-        let space = Space::new(n, 32);
-
-        black_box(
-            (space.enter(a) * space.enter(b)).exit()
-        );
-    }));
-}
-#[criterion(config())]
-fn montgomery_multiplication_fixed_r_exp(c: &mut Criterion) {
-    let mut rng = StdRng::seed_from_u64(get_seed());
-    let mut gen = StdGen::new(&mut rng, 1000);
-    c.bench_function("Montgomery Multiplication with Fixed Exponent (64)", |b| b.iter(|| {
-        let TestCase { a, b, n, r_exp: _ } = TestCase::arbitrary(&mut gen);
-
-        let space = Space::new(n, 64);
-
-        black_box(
-            (space.enter(a) * space.enter(b)).exit()
-        );
-    }));
 }
 
 #[criterion(config())]
