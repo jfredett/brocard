@@ -1,6 +1,7 @@
 use super::*;
 use criterion::{Criterion, BenchmarkId};
-use rand::SeedableRng;
+
+use brocard::prime::{is_prime, segmented_seive};
 
 
 /// This benchmark tests the MR implementation against 4 different values, two are primes, two are
@@ -23,6 +24,26 @@ fn miller_rabin_test(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(val), &val, |bench, val| {
             bench.iter(|| {
                 is_prime(*val);
+            });
+        });
+    }
+    group.finish();
+}
+
+#[criterion(config())]
+fn segmented_seive_test(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Segmented Seive");
+
+    let spans : [u128; 3] = [
+        1_000,
+        10_000,
+        100_000
+    ];
+
+    for span in spans {
+        group.bench_with_input(BenchmarkId::from_parameter(span), &span, |bench, span| {
+            bench.iter(|| {
+                segmented_seive(1_000_000, 1_000_000 + span);
             });
         });
     }

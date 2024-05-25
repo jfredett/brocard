@@ -1,4 +1,4 @@
-use crate::montgomery::Space;
+use crate::montgomery::{LegendreSymbol, Space};
 use std::ops::{Add, Sub, Mul, MulAssign, AddAssign};
 
 #[derive(Debug, Clone, Copy)]
@@ -25,6 +25,16 @@ impl Elt<'_> {
 
         val
     }
+
+    pub fn legendre(&self) -> LegendreSymbol {
+        self.space.legendre(*self)
+    }
+}
+
+impl PartialEq for Elt<'_> {
+    fn eq(&self, other: &Elt) -> bool {
+        self.val == other.val && self.space == other.space
+    }
 }
 
 impl AddAssign for Elt<'_> {
@@ -38,8 +48,13 @@ impl MulAssign for Elt<'_> {
         self.val = self.space.redc(self.val.wrapping_mul(other.val));
     }
 }
+impl MulAssign<u128> for Elt<'_> {
+    fn mul_assign(&mut self, other: u128) {
+        *self *= self.space.enter(other);
+    }
+}
 
-impl<'a> Add for Elt<'a> {
+impl<'a> Add<Elt<'a>> for Elt<'a> {
     type Output = Elt<'a>;
 
     fn add(self, other: Elt<'a>) -> Elt<'a> {
@@ -50,6 +65,15 @@ impl<'a> Add for Elt<'a> {
     }
 }
 
+impl<'a> Add<u128> for Elt<'a> {
+    type Output = Elt<'a>;
+
+    fn add(self, other: u128) -> Elt<'a> {
+        self + self.space.enter(other)
+    }
+
+}
+
 impl<'a> Mul for Elt<'a> {
     type Output = Elt<'a>;
 
@@ -58,6 +82,14 @@ impl<'a> Mul for Elt<'a> {
             val: self.space.redc(self.val.wrapping_mul(other.val)),
             space: self.space
         }
+    }
+}
+
+impl<'a> Mul<u128> for Elt<'a> {
+    type Output = Elt<'a>;
+
+    fn mul(self, other: u128) -> Elt<'a> {
+        self * self.space.enter(other)
     }
 }
 

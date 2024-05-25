@@ -1,6 +1,7 @@
 use super::*;
 use criterion::{BenchmarkId, Criterion};
 use rand::rngs::StdRng;
+use rand::SeedableRng;
 
 use brocard::montgomery::{gcd, mod_mult};
 use quickcheck::{Arbitrary, StdGen, Gen};

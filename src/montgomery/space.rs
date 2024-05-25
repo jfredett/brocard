@@ -56,6 +56,12 @@ impl Mul for LegendreSymbol {
     }
 }
 
+impl PartialEq for Space {
+    fn eq(&self, other: &Space) -> bool {
+        self.n == other.n && self.r == other.r
+    }
+}
+
 impl Space {
     /// Entering the Montgomery "Space" is the first step in the Montgomery multiplication algorithm.
     /// This converts a number `a` into `aR mod N`, where `R = 2^r_exp` and `N` is the modulus.
@@ -68,7 +74,7 @@ impl Space {
         }
     }
 
-    pub fn factorial(&self, n: usize) -> Elt {
+    pub fn factorial(&self, n: u128) -> Elt {
         let mut result = self.enter(1);
         for i in 1..=n {
             result = result * self.enter(i as u128);

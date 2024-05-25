@@ -237,7 +237,7 @@ mod tests {
 
 
                 let space = Space::new(n, r_exp);
-                let montgomery = space.factorial(k as usize);
+                let montgomery = space.factorial(k as u128);
 
                 let naive = (1..=k.into()).fold(1, |acc, x| mod_mult(acc, x, n));
 
@@ -262,6 +262,17 @@ mod tests {
             }
 
             #[quickcheck]
+            fn montgomery_mul_of_u128_is_correct(tc: TestCase) -> bool {
+                let TestCase {a, b, n, r_exp} = tc;
+
+                let space = Space::new(n, r_exp);
+                let x = space.enter(a);
+                let y = space.enter(b);
+
+                (x + b) == (x + y)
+            }
+
+            #[quickcheck]
             fn montgomery_mul_is_naive_mul(tc: TestCase) -> bool {
                 let TestCase {a, b, n, r_exp} = tc;
 
@@ -273,6 +284,17 @@ mod tests {
                 let montgomery = (a * b).exit();
 
                 naive == montgomery
+            }
+
+            #[quickcheck]
+            fn montgomery_add_of_u128_is_correct(tc: TestCase) -> bool {
+                let TestCase {a, b, n, r_exp} = tc;
+
+                let space = Space::new(n, r_exp);
+                let x = space.enter(a);
+                let y = space.enter(b);
+
+                (x * b) == (x * y)
             }
 
             #[quickcheck]

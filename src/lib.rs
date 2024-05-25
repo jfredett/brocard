@@ -4,6 +4,7 @@
 
 pub mod montgomery;
 pub mod prime;
+pub mod brocard;
 
 // Test Deps
 #[cfg(test)]

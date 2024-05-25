@@ -15,6 +15,7 @@ pub use brocard::prime::is_prime;
 mod montgomery_bench;
 mod legendre_bench;
 mod prime_bench;
+mod brocard_bench;
 
 
 fn config() -> Criterion {
