@@ -1,6 +1,5 @@
-use brocard::montgomery::*;
 use brocard::brocard::*;
-use brocard::prime::*;
+use brocard::math::prime::*;
 
 fn main() {
     let primes_vec = segmented_seive(1_000_000, 1_200_000);

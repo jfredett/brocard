@@ -1,4 +1,4 @@
-use crate::montgomery::gcd;
+use crate::math::gcd;
 use quickcheck::{Arbitrary, Gen};
 
 #[derive(Clone, Copy, Debug)]

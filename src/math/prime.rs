@@ -1,4 +1,4 @@
-use crate::montgomery::mod_exp;
+use crate::math::mod_exp;
 
 // IDEA: Implement a MR Prime Basis finder using GA.
 

@@ -1,3 +1,4 @@
+use crate::math::legendre::*;
 use crate::montgomery::*;
 use rayon::prelude::*;
 

@@ -3,7 +3,7 @@
 #![feature(effects,const_for,const_swap)]
 
 pub mod montgomery;
-pub mod prime;
+pub mod math;
 pub mod brocard;
 
 // Test Deps

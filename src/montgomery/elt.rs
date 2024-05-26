@@ -1,4 +1,5 @@
-use crate::montgomery::{LegendreSymbol, Space};
+use crate::montgomery::Space;
+use crate::math::legendre::LegendreSymbol;
 use std::ops::{Add, Sub, Mul, MulAssign, AddAssign};
 
 #[derive(Debug, Clone, Copy)]
