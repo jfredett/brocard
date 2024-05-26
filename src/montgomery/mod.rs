@@ -18,15 +18,18 @@ mod tests {
     use crate::math::legendre::LegendreSymbol;
     use crate::math::*;
 
+    const R_EXP: usize = 64;
+
     mod unit {
         use super::*;
+
 
         mod montgomery {
             use super::*;
 
             #[test]
             fn wikipedia_example() {
-                let space = Space::new(17, 8);
+                let space = Space::<{R_EXP}>::new(17);
                 let a = space.enter(7);
                 let b = space.enter(15);
 
@@ -44,7 +47,7 @@ mod tests {
 
                 #[test]
                 fn legendre_showing_divisor() {
-                    let space = Space::new(7, 8);
+                    let space = Space::<{R_EXP}>::new(7);
                     let a = space.enter(21);
 
                     assert_eq!(
@@ -55,7 +58,7 @@ mod tests {
 
                 #[test]
                 fn legendre_showing_non_residue() {
-                    let space = Space::new(11, 8);
+                    let space = Space::<{R_EXP}>::new(11);
                     let a = space.enter(21);
 
                     dbg!("nonresidue", &a, &space);
@@ -68,7 +71,7 @@ mod tests {
 
                 #[test]
                 fn legendre_showing_quadratic_residue() {
-                    let space = Space::new(5, 8);
+                    let space = Space::<{R_EXP}>::new(5);
                     let a = space.enter(21);
 
                     assert_eq!(
@@ -124,7 +127,7 @@ mod tests {
 
                 let naive = LegendreSymbol::naive_legendre(a, n);
 
-                let space = Space::new(n, r_exp);
+                let space = Space::<{R_EXP}>::new(n);
                 let a = space.enter(a);
                 let montgomery = space.legendre(a);
 
@@ -142,7 +145,7 @@ mod tests {
 
 
 
-                let space = Space::new(n, r_exp);
+                let space = Space::<{R_EXP}>::new(n);
                 let montgomery = space.factorial(k as u128);
 
                 let naive = (1..=k.into()).fold(1, |acc, x| mod_mult(acc, x, n));
@@ -153,13 +156,16 @@ mod tests {
 
         mod montgomery_ops {
             use super::*;
+
+            const R_EXP: usize = 64;
+
             #[quickcheck]
             fn montgomery_add_is_naive_add(tc: TestCase) -> bool {
-                let TestCase {a, b, n, r_exp} = tc;
+                let TestCase {a, b, n, r_exp: _} = tc;
 
                 let naive = a.wrapping_add(b) % n;
 
-                let space = Space::new(n, r_exp);
+                let space = Space::<{R_EXP}>::new(n);
                 let a = space.enter(a);
                 let b = space.enter(b);
                 let montgomery = (a + b).exit();
@@ -169,9 +175,9 @@ mod tests {
 
             #[quickcheck]
             fn montgomery_mul_of_u128_is_correct(tc: TestCase) -> bool {
-                let TestCase {a, b, n, r_exp} = tc;
+                let TestCase {a, b, n, r_exp: _} = tc;
 
-                let space = Space::new(n, r_exp);
+                let space = Space::<{R_EXP}>::new(n);
                 let x = space.enter(a);
                 let y = space.enter(b);
 
@@ -180,11 +186,11 @@ mod tests {
 
             #[quickcheck]
             fn montgomery_mul_is_naive_mul(tc: TestCase) -> bool {
-                let TestCase {a, b, n, r_exp} = tc;
+                let TestCase {a, b, n, r_exp: _} = tc;
 
                 let naive = mod_mult(a, b, n);
 
-                let space = Space::new(n, r_exp);
+                let space = Space::<{R_EXP}>::new(n);
                 let a = space.enter(a);
                 let b = space.enter(b);
                 let montgomery = (a * b).exit();
@@ -194,9 +200,9 @@ mod tests {
 
             #[quickcheck]
             fn montgomery_add_of_u128_is_correct(tc: TestCase) -> bool {
-                let TestCase {a, b, n, r_exp} = tc;
+                let TestCase {a, b, n, r_exp: _} = tc;
 
-                let space = Space::new(n, r_exp);
+                let space = Space::<{R_EXP}>::new(n);
                 let x = space.enter(a);
                 let y = space.enter(b);
 
@@ -209,7 +215,7 @@ mod tests {
 
                 let naive = (a + (n - (b % n))) % n;
 
-                let space = Space::new(n, r_exp);
+                let space = Space::<{R_EXP}>::new(n);
                 let a = space.enter(a);
                 let b = space.enter(b);
                 let montgomery = (a - b).exit();

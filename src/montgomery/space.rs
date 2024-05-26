@@ -1,5 +1,5 @@
 use crate::math::{
-    mod_inverse, mod_mult, gcd,
+    mod_inverse, mod_mult,
     legendre::LegendreSymbol
 };
 use crate::montgomery::Elt;
@@ -13,27 +13,29 @@ use crate::montgomery::Elt;
 /// efficiently by the `redc` function. When `r` is chosen to be a power of 2, the `redc` function
 /// can be implemented as a simple bit shift.
 #[derive(Debug, Clone)]
-pub struct Space {
-    pub r_exp: usize,
-    pub r: u128,
+pub struct Space<const R_EXP: usize> {
     pub n: u128,
     pub r_inv: u128, 
-    pub r_squared: u128, pub n_inv: u128,
+    pub r_squared: u128, 
+    pub n_inv: u128,
     pub n_prime: u128,
     pub r_n_legendre: LegendreSymbol
 }
 
 
-impl PartialEq for Space {
-    fn eq(&self, other: &Space) -> bool {
-        self.n == other.n && self.r == other.r
+impl<const R_EXP: usize> PartialEq for Space<R_EXP> {
+    fn eq(&self, other: &Space<R_EXP>) -> bool {
+        self.n == other.n
     }
 }
 
-impl Space {
+impl<const R_EXP: usize> Space<R_EXP> {
+    const R : u128 = 1 << R_EXP;
+    const MOD_R: u128 = Self::R - 1;
+
     /// Entering the Montgomery "Space" is the first step in the Montgomery multiplication algorithm.
     /// This converts a number `a` into `aR mod N`, where `R = 2^r_exp` and `N` is the modulus.
-    pub fn enter(&self, a: u128) -> Elt {
+    pub fn enter(&self, a: u128) -> Elt<R_EXP> {
         let val = self.redc(mod_mult(a, self.r_squared, self.n));
 
         Elt {
@@ -42,7 +44,7 @@ impl Space {
         }
     }
 
-    pub fn factorial(&self, n: u128) -> Elt {
+    pub fn factorial(&self, n: u128) -> Elt<R_EXP> {
         let mut result = self.enter(1);
         for i in 1..=n {
             result = result * self.enter(i as u128);
@@ -51,7 +53,7 @@ impl Space {
     }
 
     /// Calculates aRn via aRr * rRn, where rRn is precomputed and cached at creation time.
-    pub fn legendre(&self, a: Elt) -> LegendreSymbol {
+    pub fn legendre(&self, a: Elt<R_EXP>) -> LegendreSymbol {
         let exp = (self.n - 1) >> 1;
         let result = a.exp(exp).exit();
 
@@ -78,9 +80,8 @@ impl Space {
         // k mod r, since r is a power of two, is just the `r_exp` least significant bits of k.
         // that can be calculated by `k & (r - 1)`. This is equivalent to `k % r` when `r` is a
         // power of two.
-        let mod_r = self.r - 1;
-        let little_m = ((a & mod_r) * self.n_prime) & mod_r; 
-        let new_t = (a + (little_m * self.n)) >> self.r_exp;
+        let little_m = ((a & Self::MOD_R) * self.n_prime) & Self::MOD_R; 
+        let new_t = (a + (little_m * self.n)) >> R_EXP;
 
         if new_t >= self.n {
             new_t - self.n
@@ -99,13 +100,10 @@ impl Space {
     /// n_prime   = (r - n)^-1 mod r     // The modular inverse of -n mod r, used in `redc`
     ///
     ///
-    pub fn new(n: u128, r_exp: usize) -> Space {
-        let r = 1 << r_exp;
-
-        assert!(gcd(r, n) == 1);
-
-        let r_inv = mod_inverse(r, n).unwrap() % n;
-        let n_inv = mod_inverse(n, r).unwrap() % r;
+    pub fn new(n: u128) -> Space<R_EXP> {
+        let r_inv = mod_inverse(Self::R, n).unwrap() % n;
+        let n_inv = mod_inverse(n, Self::R).unwrap() & Self::MOD_R;
+        let r_squared = mod_mult(Self::R, Self::R, n);
 
         // n_prime is _not_ the modular inverse of n mod r. Since we're operating unsigned, we
         // can't rely on the extended GCD to calculate it, fortunately it's easy to recover without
@@ -118,25 +116,21 @@ impl Space {
         // => n' = -n^-1      mod r
         // => n' = (r - n)^-1 mod r  // Since n < r, we know this will never underflow in the subtraction.
         //
-        let n_prime = mod_inverse(r - n, r).unwrap() % r;
+        let n_prime = mod_inverse(Self::R - n, Self::R).unwrap() & Self::MOD_R;
 
         // This is used in the speedup of the legendre symbol calculation in #legendre.
         // We have to use the naive calculation here, but we only do this once and cache it.
         // Then the legendre symbol can be calculated as (aRr * rRn). This is a speedup because
         // we're doing the expensive operation mod R, and R is really easy to divide by.
-        let r_n_legendre = LegendreSymbol::naive_legendre(r, n);
+        let r_n_legendre = LegendreSymbol::naive_legendre(Self::R, n);
 
         Space {
-            r_exp,
-            r,
-            r_squared: mod_mult(r, r, n),
             r_inv,
             r_n_legendre,
+            r_squared,
             n,
             n_inv,
             n_prime
         }
     }
-
-
 }

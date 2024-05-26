@@ -38,12 +38,12 @@ impl BrocardSpan {
 
     pub fn solve(&self) -> (Vec<u128>, Vec<u128>) {
         // 1. line up all the primes and build montgomery spaces around them
-        let spaces : Vec<Space> = self.primes.iter().map(|p| Space::new(*p, R_EXP)).collect();
+        let spaces : Vec<Space<R_EXP>> = self.primes.iter().map(|p| Space::new(*p)).collect();
         // 2. identify the 'candidate', which is START
         let mut candidate = self.start;
         // 3. create an initial vector of elts V_i = p_i.factorial(candidate) that all represent
         //    the factorial of the current candidate in each montgomery space
-        let mut v : Vec<Elt> = spaces.par_iter().map(|s| s.factorial(candidate)).collect();
+        let mut v : Vec<Elt<R_EXP>> = spaces.par_iter().map(|s| s.factorial(candidate)).collect();
 
         // TODO: Replace w/ a single vector of BrocardReports
         let mut potentials = vec![];

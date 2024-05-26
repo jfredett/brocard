@@ -92,3 +92,80 @@ the managing apparatus will just be a couple systemd-wrapping-sinatra or somethi
 report results to some parent process I can run on toto.
 
 
+# 26-MAY-2024
+
+## 1223
+
+I have two big problems:
+
+1. Get an ASM dump of the montgomery math to verify there are no divisions.
+2. SIMDify montgomery math.
+
+For #2, I think the actual algorithm isn't really SIMD friendly until I'm doing MP, but some of the
+math functions might need some attention. I'm going to look over the C++ code from the prior work to
+see if I can glean how they approached it, but my suspicion is that the SIMD will really come in on
+the brocard side of the problem, not the montgomery side.
+
+I could potentially SIMD to do some calculations in parallel, but I don't think it'll gain much.
+
+The ASM dump to verify no divisions is a bit more straightforward. The #new code definitely has at
+least a couple divisions by `r`, but I should be able to replace them w/ &'s. There's a `% n` in
+there as well but I don't think that's going anywhere.
+
+I replaced the `r` divisions and kicked off the benchmark, I expect little gain.
+
+I'm going to refactor the montgomery math to use const generics for R_EXP, and then refactor the
+benchmark to try every relevant R_EXP. The `redc` algorithm currently has to recalculate `r-1`
+every time, and a const R_EXP would prevent that. It might also be worth genericizing over `u128` to
+see if a u64 is faster.
+
+## 1256
+
+One way I might approach SIMDing the montgomery stuff is SIMDing the `.enter` side, and having a
+single `n` and constant `R` for the space. So that a single Space can handle, e.g., `Cache -
+Overhead` values.
+
+## 1424
+
+Refactoring to a const R_EXP appears to have improved things slightly, at least on Legendre symbol
+benchmarking. Many of the benchmarks don't scale nicely to const generics so it's a little tricky to
+tell. Next step is to refactor out the u128, but that is going to be a massive effort since every
+math function relies on u128 and will need to be tweaked.
+
+Refactoring that should transparently support SIMD-lanes, which would probably improve the existing
+BrocardSpan implementation.
+
+Overally there is a ~1-2% improvement from the R_EXP refactor, which is pretty good for such a small
+change. Avoiding the extra calculations on each `redc` should pay off significantly on the brocard
+benchmark. I'll run that next to see how it goes. I would expect to reap significant benefit since
+`redc` is run on each multiply, and factorial necessarily multiplies `n` times, so a `1%` move on
+`n` multiplies is a `1.01^n` move on the total time.
+
+I can also consider refactoring _just_ the factorial function to SIMD to see if that adds an extra
+bit of speed to brocard.
+
+I also need to refactor TestCase to have a const R_EXP, and then do some more cleanup.
+
+I did finish re-organizing the code, the tests are all still clumped in the `montgomery/mod.rs`
+file, I'll probably pull them out to the `tests` directory since they're a little tough to organize
+otherwise.
+
+## 1440
+
+I can't actually refactor the factorial because I can't use u128 w/ simd. ugh.
+
+## 1809
+
+Slight _regression_ for brocard, not sure why, really need to look at the ASM output. I suppose it
+might be down to the fact that I make a bunch of these `Space` objects and the cost is in doing some
+of the same precalculations over and over? Not sure.
+
+Next step is to Genericize, I think, that'll at least allow me to process a small range of `n`'s
+simultaneously, if I set it to some generic LANE size I can do some benchmarking to see what the
+best size is, but I can relatively cheaply calculate a vector of `n_i!` over some small range `i` in
+`[k, k+LANES]` since each `n_i = (n_i-1)i` which means I calculate `n_k!` and then each subsequent
+element in the range is easily constructed in `LANES` operations, then I can legendre test all of
+them; since each will 'terminate' at different times I can just have a `LANES`-sized mask that I
+check to determine when to stop, meaning the Legendre test will take a worst-case time of the
+slowest test in the range. I can also short circuit if I get a Non-witness report, since it doesn't
+matter how many it passes, only that it fails on at least one.

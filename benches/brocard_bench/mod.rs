@@ -10,7 +10,7 @@
 use super::*;
 use criterion::{Criterion, BenchmarkId};
 
-use brocard::prime::segmented_seive;
+use brocard::math::prime::segmented_seive;
 use brocard::brocard::BrocardSpan;
 
 

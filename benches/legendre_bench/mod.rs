@@ -6,7 +6,8 @@ use criterion::{black_box, Criterion};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
-use brocard::montgomery::{Space, LegendreSymbol};
+use brocard::math::legendre::LegendreSymbol;
+use brocard::montgomery::Space;
 use quickcheck::{Arbitrary, StdGen};
 
 #[criterion(config())]
@@ -19,8 +20,9 @@ fn legendre_bench(c: &mut Criterion) {
                          // remember.
 
 
+    // TODO: Refactor to benchmark group
     c.bench_function("Legendre Symbol, Montgomery Multiplication, Fixed R_EXP: 8", |b| b.iter(|| {
-        let space = Space::new(p, 8);
+        let space = Space::<8>::new(p);
         let a = space.enter(a);
 
         black_box(
@@ -29,7 +31,7 @@ fn legendre_bench(c: &mut Criterion) {
     }));
 
     c.bench_function("Legendre Symbol, Montgomery Multiplication, Fixed R_EXP: 16", |b| b.iter(|| {
-        let space = Space::new(p, 16);
+        let space = Space::<16>::new(p);
         let a = space.enter(a);
 
         black_box(
@@ -38,7 +40,7 @@ fn legendre_bench(c: &mut Criterion) {
     }));
 
     c.bench_function("Legendre Symbol, Montgomery Multiplication, Fixed R_EXP: 32", |b| b.iter(|| {
-        let space = Space::new(p, 32);
+        let space = Space::<32>::new(p);
         let a = space.enter(a);
 
         black_box(
@@ -47,7 +49,7 @@ fn legendre_bench(c: &mut Criterion) {
     }));
 
     c.bench_function("Legendre Symbol, Montgomery Multiplication, Fixed R_EXP: 64", |b| b.iter(|| {
-        let space = Space::new(p, 64);
+        let space = Space::<64>::new(p);
         let a = space.enter(a);
 
         black_box(

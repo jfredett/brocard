@@ -1,7 +1,7 @@
 use super::*;
 use criterion::{Criterion, BenchmarkId};
 
-use brocard::prime::{is_prime, segmented_seive};
+use brocard::math::prime::{is_prime, segmented_seive};
 
 
 /// This benchmark tests the MR implementation against 4 different values, two are primes, two are

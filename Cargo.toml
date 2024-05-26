@@ -12,6 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 rayon = "*"
+const_for = "*"
 
 [dev-dependencies]
 approx = "*"

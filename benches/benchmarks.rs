@@ -9,8 +9,13 @@ pub use criterion_macro::criterion;
 
 pub use quickcheck::{Arbitrary, Gen};
 
-pub use brocard::montgomery::{Elt, Space, LegendreSymbol};
-pub use brocard::prime::is_prime;
+pub use brocard::montgomery::{Elt, Space};
+pub use brocard::math::prime::is_prime;
+pub use brocard::math::legendre::LegendreSymbol;
+
+
+pub use const_for::const_for;
+
 
 mod montgomery_bench;
 mod legendre_bench;
