@@ -43,7 +43,7 @@ impl BrocardSpan {
         let mut candidate = self.start;
         // 3. create an initial vector of elts V_i = p_i.factorial(candidate) that all represent
         //    the factorial of the current candidate in each montgomery space
-        let mut v : Vec<Elt<R_EXP>> = spaces.par_iter().map(|s| s.factorial(candidate)).collect();
+        let mut v : Vec<Elt<R_EXP>> = spaces.iter().map(|s| s.factorial(candidate)).collect();
 
         // TODO: Replace w/ a single vector of BrocardReports
         let mut potentials = vec![];
@@ -56,7 +56,7 @@ impl BrocardSpan {
             // TODO: 2. It would be nice to get the count of how many passed, but not critical
             // TODO: 3. This is a little ugly, maybe wrapping up the Primes in it's own object
             // would make it nicer?
-            let test : bool = v.par_iter().all(|v_i| {
+            let test : bool = v.iter().all(|v_i| {
                             (*v_i + 1).legendre() != LegendreSymbol::Nonresidue
                         });
 
@@ -77,9 +77,13 @@ impl BrocardSpan {
                 break;
             }
             // 4.5. multiply `V_i * p.enter(candidate)` for all i. This set's V_i = (i+1)!
-            v.par_iter_mut().for_each(|v_i| {
+            v.iter_mut().for_each(|v_i| {
                 *v_i *= candidate
             });
+
+            if candidate & ((1 << 20) - 1) == 0 {
+                println!("{}/{} [{:.2}%]", candidate, self.span, 100.0 * candidate as f64 / self.span as f64);
+            }
         }
         // 5. return the list of candidates that passed the test. Additionally return metadata
         //    about time spent, etc, for optimization

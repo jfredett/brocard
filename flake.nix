@@ -21,7 +21,11 @@
           languages.rust.enable = true;
           languages.rust.channel = "nightly";
 
-          packages = with pkgs; [ gnuplot ];
+          packages = with pkgs; [ 
+            gnuplot 
+            perf-tools
+            linuxKernel.packages.linux_6_6.perf
+          ];
         }];
       };
     });

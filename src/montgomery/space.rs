@@ -36,7 +36,7 @@ impl<const R_EXP: usize> Space<R_EXP> {
     /// Entering the Montgomery "Space" is the first step in the Montgomery multiplication algorithm.
     /// This converts a number `a` into `aR mod N`, where `R = 2^r_exp` and `N` is the modulus.
     pub fn enter(&self, a: u128) -> Elt<R_EXP> {
-        let val = self.redc(mod_mult(a, self.r_squared, self.n));
+        let val = self.redc(a * self.r_squared);
 
         Elt {
             val,
@@ -55,14 +55,16 @@ impl<const R_EXP: usize> Space<R_EXP> {
     /// Calculates aRn via aRr * rRn, where rRn is precomputed and cached at creation time.
     pub fn legendre(&self, a: Elt<R_EXP>) -> LegendreSymbol {
         let exp = (self.n - 1) >> 1;
-        let result = a.exp(exp).exit();
+        let result = a.exp(exp);
 
-        let a_r_sym = if result == self.n - 1 {
-            LegendreSymbol::Nonresidue
-        } else if result == 1 {
+        let a_r_sym = if result.val == 0 {
+            LegendreSymbol::Divisor
+                // it's faster to enter than exit, as the latter requires a mod operation, and
+                // entering only requires shifts.
+        } else if result == result.space.enter(1) {
             LegendreSymbol::Residue
         } else {
-            LegendreSymbol::Divisor
+            LegendreSymbol::Nonresidue
         };
 
         a_r_sym * self.r_n_legendre
