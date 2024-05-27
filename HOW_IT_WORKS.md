@@ -20,6 +20,9 @@ The Legendre Symbol is a way to determine if a number is a perfect square. It is
 - 0 if a is divisible by p
 - -1 if a is not a perfect square mod p
 
+> NOTE: For simplicity, the code actually represents the the "Nonresidue" result (`-1`) as `2`, so
+> that all enum values are positive. I justify this by noting that `2 =~ 1 mod 3`.
+
 The Legendre Symbol has a closed form calculation:
 
     L(a,p) = a^((p-1)/2) mod p
@@ -50,28 +53,13 @@ in fact it will say this with probability very close to 50%. The above paper sol
 checking against a table of 40 primes.
 
 Later work in [this repo](github.com/jhg023/brocard) uses an additional 10 primes account for at
-least one value that passed 40 tests. This repo instead has a pool of 1000 primes, and simply tests
-at random until it gets a definite-negative result.
-
-### Why Sampling instead of a list, like prior work?
-
-Sampling at random means we'll need to remember which primes we've tested against for each batch,
-but it also means that we can scale to arbitary size, and continually run the test until we get a
-definite negative, limited only by the size of the relevant primes.
-
-We need the primes to be large enough to ensure they do not divide `n! + 1`, which means we must
-have `p > n`, or else the symbol is 0, which is not useful. The pool of values contains all prior
-values from both
-[Matson](https://web.archive.org/web/20181006100943/http://unsolvedproblems.org/S99.pdf) and
-[jhg023](github.com/jhg023/brocard)'s work, as well as several thousand other values of varying
-sizes. The algorithm here will filter the prime list to only those primes which may be used, and 
-if it cannot complete it's batch with the primes it has available, it will report a possible
-positive in it's output. This can then be retested with a different pool of primes or otherwise
-handled.
+least one value that passed 40 tests. This code instead generates a bunch of primes for each run,
+and so is configurable to generate more primes as needed. In the event we get back a report that a
+number passes all the primes available, we can then review it for additional inspection.
 
 ## Using the Legendre Symbol to answer Brocard
 
-The algorithm we use is otherwise exactly the same as
+The algorithm we use is exactly the same as
 [Matson](https://web.archive.org/web/20181006100943/http://unsolvedproblems.org/S99.pdf)'s and
 [jhg023](github.com/jhg023/brocard)'s work. We simply test a range of primes, looking for a definite
 negative. As soon as we find one, we move on to the next. After testing every value in the range, we
@@ -90,6 +78,13 @@ In our example above using `n = 15`, we might have output like:
 ```
 
 These objects can then be imported, recorded, and reported on as needed.
+
+The algorithm itself will run against many primes simultaneously via SIMD; at least up until 2^64,
+at which point we'll need to switch to a multiprecison approach since SIMD doesn't support values
+with more than 64 bits in rust at the moment.
+
+> NOTE: I suppose I _could_ embrace the madness that is `core::arch` instead of using the nicer
+> `core::simd`, but I do not wish to stare into that abyss until all other options are exhausted.
 
 
 
