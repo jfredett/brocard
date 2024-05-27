@@ -169,3 +169,21 @@ them; since each will 'terminate' at different times I can just have a `LANES`-s
 check to determine when to stop, meaning the Legendre test will take a worst-case time of the
 slowest test in the range. I can also short circuit if I get a Non-witness report, since it doesn't
 matter how many it passes, only that it fails on at least one.
+
+## 2305
+
+I did some work w/ `flamegraph` to chase out some remaining div_mod calls, that worked quite well.
+
+I also found that the fairly naive splattering of `rayon` primitives around the solve function was
+probably resulting in some deadlock or something, because it simply made my machine hot for 30m
+while the sequential version runs to 1 billion in ~11m or so. Which, if I were to parallelize it
+perfectly efficiently would mean I'm right in the same ballpark as the prior solution in terms of
+speed.
+
+One optimization I made that wasn't simply avoiding div_rem instructions was to avoid a `.exit()`
+call in the Legendre symbol calculation. Since `0` is the same value for every `R`, we can just
+check for `0` without leaving montgomery form, and it turns out that _entering_ montgomery form is
+faster (despite having more steps) because there are only shifts and multiplies due to `redc`, so
+you can minimize the math by comparing the result to see if it's equal to `space(1)`, rather than
+`exit`ing as I was.
+
