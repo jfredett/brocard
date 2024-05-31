@@ -33,7 +33,7 @@ impl BrocardSpan {
     }
 
     pub fn solve(&self) {
-        let mut result = BrocardReport::empty();
+        let mut result = BrocardReport::new(self.primes.clone());
 
         // 1. line up all the primes and build montgomery spaces around them
         let spaces : Vec<Space<R_EXP>> = self.primes.iter().map(|p| Space::new(*p)).collect();
@@ -45,23 +45,24 @@ impl BrocardSpan {
 
 
         loop {
-            // 4.1. calculate the value of the legendre symbol `V_i R p_i`, halting all threads
-            //      when a non-solution-witness is found.
+            // 4.1. calculate the value of the legendre symbol `V_i R p_i`, filtering for 
+            //      NSWs
             // TODO: 2. It would be nice to get the count of how many passed, but not critical
             // TODO: 3. This is a little ugly, maybe wrapping up the Primes in it's own object
             // would make it nicer?
-            let test : Vec<_> = v.iter().filter(|v_i| {
-                (**v_i + 1).legendre() != LegendreSymbol::Nonresidue
-            }).collect();
+            let mut test = v.iter().map(|v_i| { (*v_i + 1).legendre() });
 
-            if test.is_empty() {
-                // 4.2.1 if any of the legendre symbols are non-residues, add the candidate to the
+            if test.any(|s| s == LegendreSymbol::Nonresidue) {
+                // 4.2.1 if all the legendre symbols are residues, add the candidate to the list of
+                //       potential solutions
+                result.push(BrocardCandidate::Nonsolution { 
+                    candidate,
+                    passed: test.filter(|&s| s == LegendreSymbol::Residue).count() 
+                });
+            } else {
+                // 4.2.2 if any of the legendre symbols are non-residues, add the candidate to the
                 //       list of non-solutions
                 result.push(BrocardCandidate::Solution(candidate));
-            } else {
-                // 4.2.2 if all the legendre symbols are residues, add the candidate to the list of
-                //       potential solutions
-                result.push(BrocardCandidate::Nonsolution { candidate, passed: test.len() });
             }
 
             // 4.3. increment the candidate by one, 

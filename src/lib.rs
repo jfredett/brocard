@@ -1,4 +1,5 @@
 #![feature(const_swap, const_mut_refs)]
+#![feature(duration_abs_diff)]
 
 pub mod montgomery;
 pub mod math;

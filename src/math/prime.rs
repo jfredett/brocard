@@ -116,6 +116,8 @@ mod tests {
     }
 }
 
-pub fn take_primes(start: u128, count: usize) -> Vec<u128> {
-    todo!()
+// this should be an iterator, and it's something like (start..).filter(|&n| is_prime(n)); the 
+// caller can add additional filters.
+pub fn primes_from(start: u128) -> impl Iterator<Item = u128> {
+    (start..).filter(|&n| is_prime(n))
 }

@@ -5,14 +5,16 @@ use std::io::Write;
 #[derive(Debug, PartialEq, Clone)]
 pub struct BrocardReport {
     pub candidates: Vec<BrocardCandidate>,
+    pub primes: Vec<u128>,
     pub start_time: Instant,
     pub duration: Duration,
 }
 
 impl BrocardReport {
-    pub fn empty() -> Self {
+    pub fn new(primes: Vec<u128>) -> Self {
         BrocardReport {
             candidates: vec![],
+            primes,
             start_time: Instant::now(),
             duration: Duration::new(0, 0), // a placeholder
         }
@@ -29,15 +31,30 @@ impl BrocardReport {
 
     pub fn write_to_file(&self, filename: &str) {
         let mut file = std::fs::File::create(filename).unwrap();
+        let mut max = 0;
+        let mut max_passed = 0;
+
+
         for candidate in &self.candidates {
             match candidate {
                 BrocardCandidate::Solution(n) => {
                     writeln!(file, "S:{}", n).unwrap();
                 }
                 BrocardCandidate::Nonsolution { candidate, passed } => {
-                    writeln!(file, "N:{},{}", candidate, passed).unwrap();
+                    if *passed > max_passed {
+                        max = *candidate;
+                        max_passed = *passed;
+                    }
                 }
             }
         }
+        writeln!(file);
+
+        writeln!(file, "N:{},M:{},{}", self.candidates.len(), max, max_passed); 
+        write!(file, "P:");
+        for p in &self.primes {
+            write!(file, "{},", p);
+        }
+        writeln!(file);
     }
 }
