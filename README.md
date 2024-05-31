@@ -7,7 +7,7 @@
 
 Brocard's Problem asks:
 
-    n! + 1 = k^2 for (n,k) in S = {(4,5), (5,11), (7,71)}
+    n! + 1 = k^2 for (n,k) in S = {(4,5), (5,11), (7,71), ...}
 
     What is the cardinality of S?
 
