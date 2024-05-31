@@ -187,3 +187,94 @@ faster (despite having more steps) because there are only shifts and multiplies 
 you can minimize the math by comparing the result to see if it's equal to `space(1)`, rather than
 `exit`ing as I was.
 
+
+# 30-MAY-2024
+
+## 2042
+
+Okay, I did a bunch of work to start implementing the parallelized version of this. Yes, I am
+putting off learning the SIMD stuff. I'm trying to sort out the right way to vectorize it, and I
+haven't decided if I want to try to just outscale the pain in performance that comes w/ the MMP
+branch, or if I want to try to just knock out `2^64%`[1]. I'm leaning MMP but I have to make sure
+I've got that dog in me.
+
+So, naturally I turn to the other thing, parallelization.
+
+I have mostly implemented the thing, but I'm chasing the borrow-checker around and I need to work
+out how this thing is going to function.
+
+I want to make sure that if the program crashes, I can recover with minimal lost work. We can see
+why in a bit from `jhg`'s work, they note:
+
+> We tested the first 1x10^15 (1 quadrillion) values over a period of ~5 months (January-May, 2020),
+> but no additional solutions were found.
+
+5 months is a long time, and indeed the time will grow exponentially for me. I'm attacking that
+problem through scaling out, but I also need to consider how often I want to spend 'saving' the
+work I've already done so that I don't waste it in an unexpected crash.
+
+I also want to be able to upgrade this over time, I'm going to be continuing to run this well past
+the initial `2^64%` goal, so I want to be able to reliably stop without wasting work. My plan is to
+build to the point where I have _some_ implementation going that can reliably generate new NSWs as
+quickly as possible, so that I can then slowly iterate and replace parts as it runs.
+
+To accomplish this, I really want to think in terms of an RPO, not in terms of how it's going to
+work; if I never want to lose more than some target time -- say a minute -- of data, then it's easy
+enough to break off a 'chunk' of my target range and search it; identifying some set of primes just
+outside the range dynamically, it can employ any number of algorithms for searching that range that
+it likes, so long as I record:
+
+1. The primes used
+2. The number of solutions/nonsolutions in the range
+3. The SHA of the version of code being run, so we can replicate it after the fact
+4. Build information (dependencies, etc) associated with the code
+
+A future skeptic could then check out the same code at the same versions, compile the code, and with
+reasonable certainty replicate the chunk. 
+
+I'd conjecture that larger chunks will generally be more efficient, but smaller chunks are safer
+from a crash-perspective. Because I also expect to scale to new hardware in this process, I won't
+always know how large of a range will take a minute to process, so ultimately I want to have some
+dynamic 'tuning' capability.
+
+Since I'm already breaking things into chunks, it makes sense to me to have a Broker/Worker design
+to fan this work out across cores. The 'broker' hands out 'chunks' to the 'spans' along with some
+primes that are just slightly outside the span. I'm not sure that'll make things faster, but it's
+very aesthetic.
+
+I've roughed in a version of that, but it's still missing a couple pieces.
+
+First, I'm pretty sure as written it'll only run one thread; but I was fighting a lot with the
+borrow checker and wanted to get to some psuedo-stable point.
+
+Second, I haven't implemented the 'take_primes' function which should return a fixed number of
+primes upon request.
+
+I have a lot of ideas for optimizations, but I want to get to the point where I can start running
+this in some capacity and start figuring out how to upgrade it in situ.
+
+
+----
+
+
+[1] An footnote: I am going to name some things. 
+
+First, an acronym: WNS or NSW, both mean `Witness of Nonsolution` or `Nonsolution-Witness`. These
+are the primes for which the Legendre test returns a non-residue result.
+
+Second, I'm going to assign some 'speedrun' categories to different bounds. The obvious ones are:
+
+1. Gupta% : Wall time to 63
+2. Berndt-Galway% : Wall time to 1e9
+3. Matson% : Wall time to 1e12
+4. jhg% : Wall time to 1e15
+5. 2^64% : Wall time to solve for every value less than 2^64 
+6. Brocard% : Time To Novel Proof there are/are no more solutions.
+
+Other categories may be introduced in the future. I have assigned names as seem appropriate, the
+first person to set a record in the category should, I think, have a right to name it, so if any of
+these fine folks want to change the name I'm happy to oblige as official self-nominated benevolent
+record-keeper for as long as the position suits me.
+
+Thank you for coming to my footnote.
+
