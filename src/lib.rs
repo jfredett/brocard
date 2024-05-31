@@ -1,6 +1,4 @@
-#![feature(portable_simd)]
-#![feature(const_mut_refs, const_trait_impl)]
-#![feature(effects,const_for,const_swap)]
+#![feature(const_swap, const_mut_refs)]
 
 pub mod montgomery;
 pub mod math;
@@ -10,4 +8,4 @@ pub mod brocard;
 #[cfg(test)]
 #[macro_use] extern crate quickcheck_macros;
 
-extern crate const_for;
+extern crate crossbeam;

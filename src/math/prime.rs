@@ -115,3 +115,7 @@ mod tests {
         }
     }
 }
+
+pub fn take_primes(start: u128, count: usize) -> Vec<u128> {
+    todo!()
+}

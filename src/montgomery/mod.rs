@@ -123,7 +123,6 @@ mod tests {
             fn montgomery_legendre_is_naive_legendre(a: u128) -> bool {
 
                 let n = (1 << 61) - 1; //A friendly Mersenne Prime Appears
-                let r_exp = 64;
 
                 let naive = LegendreSymbol::naive_legendre(a, n);
 
@@ -140,11 +139,7 @@ mod tests {
             use super::*;
 
             #[quickcheck]
-            fn montgomery_factorial_is_naive_factorial(k: u8, tc: TestCase) -> bool {
-                let TestCase {a: _, b: _, n, r_exp} = tc;
-
-
-
+            fn montgomery_factorial_is_naive_factorial(k: u8, n: u128) -> bool {
                 let space = Space::<{R_EXP}>::new(n);
                 let montgomery = space.factorial(k as u128);
 
@@ -211,7 +206,7 @@ mod tests {
 
             #[quickcheck]
             fn montgomery_sub_is_naive_sub(tc: TestCase) -> bool {
-                let TestCase {a, b, n, r_exp} = tc;
+                let TestCase {a, b, n, r_exp: _} = tc;
 
                 let naive = (a + (n - (b % n))) % n;
 
