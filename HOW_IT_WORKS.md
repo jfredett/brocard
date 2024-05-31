@@ -20,7 +20,8 @@ The Legendre Symbol is a way to determine if a number is a perfect square. It is
 - 0 if a is divisible by p
 - -1 if a is not a perfect square mod p
 
-> NOTE: For simplicity, the code actually represents the the "Nonresidue" result (`-1`) as `2`, so
+> [!NOTE]
+> For simplicity, the code actually represents the the "Nonresidue" result (`-1`) as `2`, so
 > that all enum values are positive. I justify this by noting that `2 =~ 1 mod 3`.
 
 The Legendre Symbol has a closed form calculation:
@@ -83,7 +84,8 @@ The algorithm itself will run against many primes simultaneously via SIMD; at le
 at which point we'll need to switch to a multiprecison approach since SIMD doesn't support values
 with more than 64 bits in rust at the moment.
 
-> NOTE: I suppose I _could_ embrace the madness that is `core::arch` instead of using the nicer
+> [!NOTE]
+> I suppose I _could_ embrace the madness that is `core::arch` instead of using the nicer
 > `core::simd`, but I do not wish to stare into that abyss until all other options are exhausted.
 
 
