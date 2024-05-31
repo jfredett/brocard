@@ -278,3 +278,79 @@ record-keeper for as long as the position suits me.
 
 Thank you for coming to my footnote.
 
+
+# 31-MAY-2024
+
+## 0802
+
+I got this all working last night and started it on my R730, Dragon-of-Perdition. It is not fast,
+and it is not yet producing results I would feel confident counting on, but it is running and broke
+past the Berndt-Galway% barrier overnight.
+
+At this point, the next step is to work on improving the solver speed and that means SIMD.
+
+I will later need to build up another layer above the broker (or move some of the broker stuff down
+to another thread, IDK yet), to allow for some cross-system coordination; but for now I can scale to
+consume all available cores on a machine and that is pretty rad.
+
+I've been thinking about how to SIMD and I'm leaning towards the MMP solution with SIMD happening
+within the MMP implementation. I considered trying to SIMD across primes, and that might still be
+the 'right' way (more on that in a second) in some sense, but ultimately I want to build an
+upgradable thing for _all_ numbers, and that'll work better with MMP.
+
+I think it'll also scale better to GPUs.
+
+I'd like to build something that is a sort of 'progressive' multiprecision, so slowly expanding the
+amount of SIMD resources spent on the multiprecision-ness, but also allowing for a SIMD-ified `Elt`
+object, which means we'd have SIMD both _inside_ the object and 'across' the object. Essentially
+having a `EltVector<R_EXP, WIDTH>` where `WIDTH` is the number of MP objects contained in the
+structure, which can then be vectorized as well. Not quite sure how to make that happen just yet,
+but one of the things my current implementation does which I think might not be so clever as I hoped
+is calculate a range of primes for each chunk that is 'just outside' the range. This seems to result
+in a lot of 'near misses' where the high watermarks on passing items is frequently 40+ primes. I
+can't tell if that's a bug or if the choice of primes are such that this is 'normal'.
+
+Fortunately, each chunk publishes the range of primes used to calculate it. Unfortunately it doesn't
+currently print what the start/span is, so another area to improve is the reporting and general
+output functionality.
+
+I think chosing primes at the start may be net faster, as I should, in principle, be able to cache
+and share the Montgomery `Space` objects across everything as immutable objects and eliminate some
+amount of churn when spinning up new threads. I suspect that'll be quicker and will give more
+consistent results. If I set it to read those primes from a file I should be able to exactly
+replicate some results which should help me verify my code is working equivalently to the prior
+work.
+
+This also opens some alternative Speedrun categories in the form of 'what's the set of primes for
+which the number of passed tests is minimized in the worst case?'
+
+That question is actually extremely interesting once you try asking _why_ those primes might result
+in a minimized NSW passed-tests metric.
+
+I also think the 'how many tests did you actually pass' metric is a little harder on me than it has
+been on prior work, since I'm always testing across all 60 primes, where I believe they only tested
+across as many as it took to get a NSW. So prior works 'maximum passed tests' might be hiding the
+fact that the tests were run sequentially, and they just 'lucked out' and had most terminate early,
+the alternative prime modes should support that model of checking as well.
+
+
+So, the TODO list as it stands, in no particular order:
+
+1. Improve report output to include:
+    - SHA of code used to run it
+    - Timestamp of start time, duration information
+    - Range searched
+2. Extract broker's RX Loop to a separate thread
+3. Build multi-broker coordinator
+4. Implement alternative prime-selection modes
+    - Existing mode finds primes via miller rabin
+    - Also support providing a list of primes
+        - preinclude prime lists from all prior work
+    - Also support sequential scan/short circuiting vs full test mode
+5. SIMDify an MMP implementation
+    - This is, y'know, pretty hard
+
+
+I think that covers it, I'm going to continue to let it run on my other machine, but at the moment
+it looks to be doing about 4-5 billion values per day, so I've got a long way to go to beat the
+~5 month time `jhg` set.

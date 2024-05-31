@@ -1,5 +1,4 @@
 use brocard::brocard::*;
-use brocard::math::prime::*;
 use std::time::Duration;
 
 const BOUND : u128 = 1_000_000_000;

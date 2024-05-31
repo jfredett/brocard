@@ -1,3 +1,7 @@
+> [!TIP] This is _very_ work in progress, especially the documentation part, so if you're reading
+> this, please take it with a heavy grain of salt until this tip is removed.
+
+
 # What the heck is this?
 
 Brocard's Problem asks:
