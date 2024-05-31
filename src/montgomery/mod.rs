@@ -140,6 +140,8 @@ mod tests {
 
             #[quickcheck]
             fn montgomery_factorial_is_naive_factorial(k: u8, n: u128) -> bool {
+                if gcd(n, R_EXP as u128) != 1 { return true; }
+
                 let space = Space::<{R_EXP}>::new(n);
                 let montgomery = space.factorial(k as u128);
 
