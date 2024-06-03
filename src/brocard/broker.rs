@@ -64,15 +64,23 @@ impl BrocardBroker {
                     // check the talkback channel for a message that a job has finished
                     // TODO: Would be better to spin this till the queue is empty before spawning
                     // new jobs?
-                    if let Ok(ref report@BrocardReport { ref candidates, start_time, primes: _, duration  } ) = self.rx.try_recv() {
+                    // FIXME: start_time is kinda busted, I want this to be the actual start time,
+                    // but Instant doesn't work that way
+                    if let Ok(ref report@BrocardReport { ref candidates, start_time: _, primes: _, duration  } ) = self.rx.try_recv() {
                         // TODO: impl Display for stuff instead of picking it apart here.
                         println!("Received Report from chunk started {:?} ago.", duration);
 
                         print!("Writing report to compressed file... ");
                         // TODO: This feels kind of crappy.
                         // TODO: This should also compress the file.
-                        report.write_to_file(format!("./out/report-{}.json", started_jobs - workload_max).as_str());
-                        println!("Done.");
+                        let write_result = report.write_to_file(
+                            format!("./out/report-{}.json", started_jobs - workload_max).as_str()
+                        );
+
+                        match write_result {
+                            Ok(_) => println!("Done."),
+                            Err(e) => println!("Failed to write chunk due to: {:?}", e)
+                        }
 
                         let mut max = 0;
                         let mut max_passed = 0;

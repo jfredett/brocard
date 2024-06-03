@@ -29,7 +29,7 @@ impl BrocardReport {
         self
     }
 
-    pub fn write_to_file(&self, filename: &str) {
+    pub fn write_to_file(&self, filename: &str) -> Result<(), std::io::Error> {
         let mut file = std::fs::File::create(filename).unwrap();
         let mut max = 0;
         let mut max_passed = 0;
@@ -48,13 +48,13 @@ impl BrocardReport {
                 }
             }
         }
-        writeln!(file);
+        writeln!(file)?;
 
-        writeln!(file, "N:{},M:{},{}", self.candidates.len(), max, max_passed); 
-        write!(file, "P:");
+        writeln!(file, "N:{},M:{},{}", self.candidates.len(), max, max_passed)?; 
+        write!(file, "P:")?;
         for p in &self.primes {
-            write!(file, "{},", p);
+            write!(file, "{},", p)?;
         }
-        writeln!(file);
+        writeln!(file)
     }
 }

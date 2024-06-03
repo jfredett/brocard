@@ -354,3 +354,39 @@ So, the TODO list as it stands, in no particular order:
 I think that covers it, I'm going to continue to let it run on my other machine, but at the moment
 it looks to be doing about 4-5 billion values per day, so I've got a long way to go to beat the
 ~5 month time `jhg` set.
+
+## 1213
+
+I killed the run on my other machine, the 2,3 search wasn't converging particularly nicely, and I
+think I'll probably need to adjust my approach, it will help when the reciever loop is independent
+of the main loop, so that all my control logic is separate from my output/adjustment logic and solve
+logic.
+
+I managed to get up to around 1e10 in about 12 hours, so I'm within spitting distance of Matson%. 
+
+I want to improve the report output as it seems to be the lowest hanging fruit, and improving it
+should help me come up with a better time-tuning algorithm.
+
+I may try just refactoring to use an existing BigInt instead of u128, and maybe my existing impl
+will translate cleanly, not sure yet.
+
+
+# 2-JUN-2024
+
+## 1457
+
+Took a brief break to work on some [other stuff](https://github.com/jfredett/katuv), and will
+probably continue to do so for a bit, but I _also_ looked a bit at
+[rust-gpu](https://github.com/EmbarkStudios/rust-gpu) and I think there is a natural way to
+translate the montgomery stuff to use that, so I may take a brief stab at implementing my MMP
+solution there instead of via SIMD. If I could get this to run on a GPU I suspect I'd sweep the
+speedrun targets pretty quickly, and it's a good way to get a pipeline set up to exploit the GPU for
+other similar problems.
+
+# 3-JUN-2024
+
+## 1041
+
+I'm in between meetings so I did some cleanup and got the benches working again. I'm going to wipe
+out the old results and start fresh this evening.
+

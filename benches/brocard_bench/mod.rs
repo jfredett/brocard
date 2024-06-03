@@ -10,8 +10,8 @@
 use super::*;
 use criterion::{Criterion, BenchmarkId};
 
-use brocard::math::prime::segmented_seive;
-use brocard::brocard::BrocardSpan;
+use brocard::math::prime::primes_from;
+use brocard::brocard::span::BrocardSpan;
 
 
 #[criterion(config())]
@@ -26,14 +26,11 @@ fn brocard_test(c: &mut Criterion) {
     ];
 
     for val in vals {
-        let primes_vec = segmented_seive(val, val + 1_000);
-        let mut primes = [0; 60];
+        let primes : Vec<u128> = primes_from(val).take(60).collect();
+        let (tx, rx) = crossbeam::channel::unbounded();
 
-        for i in 0..60 {
-            primes[i] = primes_vec[i];
-        }
 
-        let span = BrocardSpan::new(2, val, primes);
+        let span = BrocardSpan::new(2, val, primes, tx);
 
         group.bench_with_input(BenchmarkId::from_parameter(val), &val, |bench, _val| {
             bench.iter(|| {

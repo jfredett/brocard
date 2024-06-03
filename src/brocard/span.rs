@@ -81,7 +81,8 @@ impl BrocardSpan {
         // 5. return the list of candidates that passed the test. Additionally return metadata
         //    about time spent, etc, for optimization
         let ret = result.finish();
-        self.tx.send(ret.clone());
+        // FIXME: This is probably wrong. I should do some kind of error handling/requeing.
+        let _ = self.tx.send(ret.clone());
     }
 
 }

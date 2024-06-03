@@ -3,19 +3,13 @@
 
 use super::*;
 use criterion::{black_box, BenchmarkId, Criterion};
-use rand::rngs::StdRng;
-use rand::SeedableRng;
 
 use brocard::math::legendre::LegendreSymbol;
 use brocard::montgomery::Space;
-use quickcheck::{Arbitrary, StdGen};
 
 const RANGE : std::ops::Range<u128> = 10_000..20_000;
 #[criterion(config())]
 fn legendre_bench(c: &mut Criterion) {
-    let mut rng = StdRng::seed_from_u64(get_seed());
-    let mut gen = StdGen::new(&mut rng, 1000);
-
     let p = (1 << 61) - 1; // this is a large mersenne prime, it's handy because it's short to
                          // remember.
 
