@@ -26,7 +26,7 @@ impl LegendreSymbol {
 impl Mul for LegendreSymbol {
     type Output = Self;
 
-    fn mul(self, rhs: Self) -> Self {
+    #[inline] fn mul(self, rhs: Self) -> Self {
         match (self, rhs) {
             (LegendreSymbol::Divisor    , _                         ) => LegendreSymbol::Divisor,
             (_                          , LegendreSymbol::Divisor   ) => LegendreSymbol::Divisor,

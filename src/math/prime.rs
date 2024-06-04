@@ -10,7 +10,8 @@ const MR_BASES: [u128; 12] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37];
 
 // Miller-Rabin Primality test using MR_BASES as it's set of bases. Implemented following:
 // https://cp-algorithms.com/algebra/primality_tests.html
-pub fn is_prime(n: u128) -> bool {
+#[inline] pub fn is_prime(n: u128) -> bool {
+    // TODO: Calculate leading 1, R_EXP = that << 1, use monty.
     if n < 2 { return false; }
     if n == 2 { return true; }
     if n & 1 == 0 { return false; }
@@ -30,7 +31,7 @@ pub fn is_prime(n: u128) -> bool {
     return true;
 }
 
-fn check_composite(n: u128, a: u128, d: u128, s: u128) -> bool {
+#[inline] fn check_composite(n: u128, a: u128, d: u128, s: u128) -> bool {
     let mut x = mod_exp(a,d,n);
 
     if x == 1 || x == n - 1 { return false; }
@@ -68,6 +69,12 @@ pub fn segmented_seive(low: u128, high: u128) -> Vec<u128> {
 }
 
 
+// this should be an iterator, and it's something like (start..).filter(|&n| is_prime(n)); the 
+// caller can add additional filters.
+pub fn primes_from(start: u128) -> impl Iterator<Item = u128> {
+    (start..).filter(|&n| is_prime(n))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -93,6 +100,12 @@ mod tests {
         return true;
     }
 
+    #[test]
+    fn primes_from_works() {
+        let primes : Vec<u128> = primes_from(2).take(168).collect();
+        assert_eq!(primes, SMALL_PRIMES);
+    }
+
     #[quickcheck]
     fn miller_rabin_correctness(a_in: u16) -> bool {
         let a = a_in as u128; // keep the size small by restricting to u16, but we need to work on
@@ -114,10 +127,4 @@ mod tests {
             assert!(is_prime(*p));
         }
     }
-}
-
-// this should be an iterator, and it's something like (start..).filter(|&n| is_prime(n)); the 
-// caller can add additional filters.
-pub fn primes_from(start: u128) -> impl Iterator<Item = u128> {
-    (start..).filter(|&n| is_prime(n))
 }

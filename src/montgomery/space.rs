@@ -35,7 +35,7 @@ impl<const R_EXP: usize> Space<R_EXP> {
 
     /// Entering the Montgomery "Space" is the first step in the Montgomery multiplication algorithm.
     /// This converts a number `a` into `aR mod N`, where `R = 2^r_exp` and `N` is the modulus.
-    pub fn enter(&self, a: u128) -> Elt<R_EXP> {
+    #[inline] pub fn enter(&self, a: u128) -> Elt<R_EXP> {
         let val = self.redc(a * self.r_squared);
 
         Elt {
@@ -44,7 +44,7 @@ impl<const R_EXP: usize> Space<R_EXP> {
         }
     }
 
-    pub fn factorial(&self, n: u128) -> Elt<R_EXP> {
+    #[inline] pub fn factorial(&self, n: u128) -> Elt<R_EXP> {
         let mut result = self.enter(1);
         for i in 1..=n {
             result = result * self.enter(i as u128);
@@ -78,7 +78,7 @@ impl<const R_EXP: usize> Space<R_EXP> {
     ///
     /// This allows a _much_ faster modulo operation, since shifting is much cheaper than division.
     /// This scales up to multiprecision numbers, but we limit to 128b numbers here.
-    pub fn redc(&self, a: u128) -> u128 {
+    #[inline] pub fn redc(&self, a: u128) -> u128 {
         // k mod r, since r is a power of two, is just the `r_exp` least significant bits of k.
         // that can be calculated by `k & (r - 1)`. This is equivalent to `k % r` when `r` is a
         // power of two.

@@ -2,7 +2,7 @@ pub mod prime;
 pub mod legendre;
 
 // TODO: This almost certainly exists somewhere already
-pub const fn gcd(a: u128, b: u128) -> u128 {
+#[inline] pub const fn gcd(a: u128, b: u128) -> u128 {
     let mut a = a;
     let mut b = b;
     while b != 0 {
@@ -13,7 +13,7 @@ pub const fn gcd(a: u128, b: u128) -> u128 {
     a
 }
 
-pub const fn mod_inverse(n: u128, r: u128) -> Option<u128> {
+#[inline] pub const fn mod_inverse(n: u128, r: u128) -> Option<u128> {
     let mut t = 0u128;
     let mut new_t = 1u128;
     let mut r = r;
@@ -34,7 +34,7 @@ pub const fn mod_inverse(n: u128, r: u128) -> Option<u128> {
     Some(t)
 }
 
-pub const fn mod_mult(a: u128, b: u128, n: u128) -> u128 {
+#[inline] pub const fn mod_mult(a: u128, b: u128, n: u128) -> u128 {
     let mut result = 0;
     let mut a = a % n;
     let mut b = b % n;
@@ -48,12 +48,12 @@ pub const fn mod_mult(a: u128, b: u128, n: u128) -> u128 {
     result
 }
 
-pub const fn mod_inv(a: u128, n: u128) -> u128 {
+#[inline] pub const fn mod_inv(a: u128, n: u128) -> u128 {
     let (x, _) = extended_gcd(a, n);
     (x % n + n) % n
 }
 
-pub const fn mod_exp(a: u128, k: u128, n: u128) -> u128 {
+#[inline] pub const fn mod_exp(a: u128, k: u128, n: u128) -> u128 {
     let mut a = a;
     let mut k = k;
     let mut result = 1;
@@ -69,7 +69,7 @@ pub const fn mod_exp(a: u128, k: u128, n: u128) -> u128 {
     result
 }
 
-pub const fn extended_gcd(a: u128, b: u128) -> (u128, u128) {
+#[inline] pub const fn extended_gcd(a: u128, b: u128) -> (u128, u128) {
     let mut s = 0;
     let mut t = 1;
     let mut r = b;
