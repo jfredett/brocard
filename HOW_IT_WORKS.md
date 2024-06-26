@@ -22,7 +22,7 @@ The Legendre Symbol is a way to determine if a number is a perfect square. It is
 
 > [!NOTE]
 > For simplicity, the code actually represents the the "Nonresidue" result (`-1`) as `2`, so
-> that all enum values are positive. I justify this by noting that `2 =~ 1 mod 3`.
+> that all enum values are positive. I justify this by noting that `2 =~ -1 mod 3`.
 
 The Legendre Symbol has a closed form calculation:
 
